@@ -5,59 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vibración Intermitente</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
-        }
-
-        .container {
-            text-align: center;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            max-width: 400px;
-            width: 100%;
-        }
-
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 28px;
-        }
-
-        .x-container {
-            margin: 40px auto;
-            position: relative;
-            width: 150px;
-            height: 150px;
-        }
-
-        .x-image {
-            width: 100%;
-            height: 100%;
-            font-size: 120px;
-            font-weight: bold;
-            color: #ff4757;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
+        /* Estilos iguales hasta la animación */
 
         .vibrating {
-            animation: shake 0.1s infinite;
+            animation: shake 0.5s linear;
         }
 
         @keyframes shake {
@@ -68,83 +19,13 @@
             100% { transform: translateX(0) rotate(45deg); }
         }
 
-        .controls {
-            margin-top: 40px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        button {
-            padding: 15px 30px;
-            font-size: 18px;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-
-        #startBtn {
-            background: #4CAF50;
-            color: white;
-        }
-
-        #startBtn:hover {
-            background: #45a049;
-            transform: translateY(-2px);
-        }
-
-        #stopBtn {
-            background: #ff4757;
-            color: white;
-        }
-
-        #stopBtn:hover {
-            background: #ff3742;
-            transform: translateY(-2px);
-        }
-
-        .status {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            background: #f8f9fa;
-            font-size: 16px;
-            color: #333;
-            display: none;
-        }
-
-        .pulse {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #ff4757;
-            margin-right: 10px;
-            animation: pulse 3s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-
-        .warning {
-            margin-top: 20px;
-            padding: 15px;
-            background: #fff3cd;
-            border: 1px solid #ffc107;
-            border-radius: 10px;
-            color: #856404;
-            font-size: 14px;
-        }
+        /* ... resto de estilos ... */
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Vibración Intermitente</h1>
+        <!-- ... mismo HTML ... -->
+            <h1>Vibración Intermitente</h1>
         
         <div class="x-container">
             <div class="x-image" id="xImage">
@@ -175,14 +56,15 @@
         const status = document.getElementById('status');
         
         // Variables de control
-        let vibrationInterval = null;
+        let vibrationTimeout = null;
         let isVibrating = false;
 
         // Verificar si la API de vibración está disponible
         const canVibrate = 'vibrate' in navigator;
 
-        // Patrón de vibración: 500ms vibración, 2500ms pausa
-        const vibrationPattern = [500, 2500];
+        // Duración de la vibración y del ciclo
+        const VIBRATION_DURATION = 500;
+        const CYCLE_DURATION = 3000; // 3 segundos
 
         // Función para iniciar la vibración
         function startVibration() {
@@ -192,39 +74,44 @@
             }
 
             if (!isVibrating) {
-                // Activar vibración inmediatamente
-                navigator.vibrate(vibrationPattern[0]);
-                xImage.classList.add('vibrating');
-                
-                // Configurar intervalo para vibración intermitente
-                vibrationInterval = setInterval(() => {
-                    navigator.vibrate(vibrationPattern[0]);
-                }, vibrationPattern[0] + vibrationPattern[1]);
-
-                // Actualizar estado
                 isVibrating = true;
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
                 status.style.display = 'block';
                 
-                console.log('Vibración iniciada - Patrón: 500ms vibración, 2500ms pausa');
+                // Función que realiza un ciclo de vibración
+                function vibrateCycle() {
+                    if (!isVibrating) return;
+                    
+                    // Activar vibración por 500ms
+                    navigator.vibrate(VIBRATION_DURATION);
+                    
+                    // Activar animación de la X
+                    xImage.classList.add('vibrating');
+                    // Quitar la clase después de 500ms para permitir que se vuelva a activar en el próximo ciclo
+                    setTimeout(() => {
+                        xImage.classList.remove('vibrating');
+                    }, VIBRATION_DURATION);
+                    
+                    // Programar el próximo ciclo después de CYCLE_DURATION (desde el inicio de este ciclo)
+                    vibrationTimeout = setTimeout(vibrateCycle, CYCLE_DURATION);
+                }
+                
+                // Iniciar el primer ciclo
+                vibrateCycle();
             }
         }
 
         // Función para detener la vibración
         function stopVibration() {
             if (isVibrating) {
-                clearInterval(vibrationInterval);
+                isVibrating = false;
+                clearTimeout(vibrationTimeout);
                 navigator.vibrate(0); // Detener vibración actual
                 xImage.classList.remove('vibrating');
-                
-                // Actualizar estado
-                isVibrating = false;
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
                 status.style.display = 'none';
-                
-                console.log('Vibración detenida');
             }
         }
 
@@ -235,14 +122,6 @@
         // Detener vibración al salir de la página
         window.addEventListener('beforeunload', stopVibration);
         window.addEventListener('pagehide', stopVibration);
-
-        // Información inicial en consola
-        console.log('Sistema de vibración listo');
-        console.log('Dispositivo soporta vibración:', canVibrate);
-        
-        if (canVibrate) {
-            console.log('Patrón de vibración configurado:', vibrationPattern);
-        }
     </script>
 </body>
 </html>
